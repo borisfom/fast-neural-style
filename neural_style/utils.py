@@ -27,7 +27,7 @@ def tensor_save_rgbimage(tensor, filename, cuda=False):
         img = tensor.clone().clamp(0, 255).numpy()
     img = img.transpose(1, 2, 0).astype('uint8')
     img = Image.fromarray(img)
-    img.save(filename)
+    img.save(filename, format='JPEG', subsampling=0, quality=100)
 
 
 def tensor_save_bgrimage(tensor, filename, cuda=False):
