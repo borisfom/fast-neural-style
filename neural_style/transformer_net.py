@@ -152,6 +152,11 @@ class InstanceNormalization(torch.nn.Module):
 
 
     def forward(self, x):
+        orig_x = x
+        is_fp16 = 'Half' in x.data.type()
+        if is_fp16:
+            x = x.float()
+        # since we hand-roll instance norm it doesn't perform well all in fp16
         n = x.size(2) * x.size(3)
         t = x.view(x.size(0), x.size(1), n)
         mean = torch.mean(t, 2).unsqueeze(2).unsqueeze(3).expand_as(x)
@@ -162,7 +167,9 @@ class InstanceNormalization(torch.nn.Module):
         shift_broadcast = self.shift.unsqueeze(1).unsqueeze(1).unsqueeze(0)
         shift_broadcast = shift_broadcast.expand_as(x)
         out = (x - mean) / torch.sqrt(var + self.eps)
+        if is_fp16:
+            out = out.half()
         out = out * scale_broadcast + shift_broadcast
-        if torch._C._jit_is_tracing(x):
-            out = self.hack_onnx(x, out)
+        if torch._C._jit_is_tracing(orig_x):
+            out = self.hack_onnx(orig_x, out)
         return out
