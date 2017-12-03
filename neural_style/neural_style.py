@@ -104,17 +104,17 @@ def train(args):
                                   (agg_content_loss + agg_style_loss) / (batch_id + 1)
                 )
                 print(mesg)
-
-    # save model
-    transformer.eval()
-    transformer.cpu()
-    save_model_filename = "epoch_" + str(args.epochs) + "_" + str(time.ctime()).replace(' ', '_') + "_" + str(
-        args.content_weight) + "_" + str(args.style_weight) + ".model"
-    save_model_path = os.path.join(args.save_model_dir, save_model_filename)
-    torch.save(transformer.state_dict(), save_model_path)
-
-    print("\nDone, trained model saved at", save_model_path)
-
+            if (batch_id + 1) % args.save_interval == 0:
+                # save model
+                transformer.eval()
+                transformer.cpu()
+                save_model_filename = "epoch_" + str(args.epochs) + "_" + str(time.ctime()).replace(' ', '_') + "_" + str(
+                    args.content_weight) + "_" + str(args.style_weight) + ".model"
+                save_model_path = os.path.join(args.save_model_dir, save_model_filename)
+                torch.save(transformer.state_dict(), save_model_path)
+                print("\nDone, trained model saved at", save_model_path)
+                
+        print("\nDone, trained models saved at", save_model_path)
 
 def check_paths(args):
     try:
@@ -209,9 +209,12 @@ def main():
                                   help="weight for style-loss, default is 5.0")
     train_arg_parser.add_argument("--lr", type=float, default=1e-3,
                                   help="learning rate, default is 0.001")
-    train_arg_parser.add_argument("--log-interval", type=int, default=500,
-                                  help="number of images after which the training loss is logged, default is 500")
+    train_arg_parser.add_argument("--log-interval", type=int, default=50,
+                                  help="number of images after which the training loss is logged, default is 50")
+    train_arg_parser.add_argument("--save-interval", type=int, default=1000,
+                                  help="number of images after which the model is saved, default is 1000")
 
+    
     eval_arg_parser = subparsers.add_parser("eval", help="parser for evaluation/stylizing arguments")
     eval_arg_parser.add_argument("--content-image", type=str, required=True,
                                  help="path to content image you want to stylize")
