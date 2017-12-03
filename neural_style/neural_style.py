@@ -143,11 +143,18 @@ def stylize(args):
     if args.cuda:
         style_model.cuda()
 
+    if args.half:
+        style_model.half()
+        content_image = content_image.half()
+
     if args.export_onnx:
         assert args.export_onnx.endswith(".onnx"), "Export model file should end with .onnx"
         output = torch.onnx._export(style_model, content_image, args.export_onnx)
     else:
         output = style_model(content_image)
+
+    if args.half:
+        output = output.float()
 
     utils.tensor_save_bgrimage(output.data[0], args.output_image, args.cuda)
 
@@ -162,7 +169,7 @@ def stylize_onnx_caffe2(args):
     # TODO: change tools to run without PyTorch
     content_image = utils.tensor_load_rgbimage(args.content_image, scale=args.content_scale)
     content_image = content_image.unsqueeze(0)
-    content_image = utils.preprocess_batch(content_image)
+    content_image = utils.preprocess_batch(content_image).numpy()
 
     import onnx
     import onnx_caffe2.backend
@@ -170,9 +177,15 @@ def stylize_onnx_caffe2(args):
     model = onnx.load(args.model)
 
     prepared_backend = onnx_caffe2.backend.prepare(model, device='CUDA' if args.cuda else 'CPU')
-    inp = {model.graph.input[0].name: content_image.numpy()}
+    if args.half:
+        for op in prepared_backend.predict_net.op:
+            op.engine = 'CUDNN'
+        content_image = content_image.astype(np.float16)
+    inp = {model.graph.input[0].name: content_image}
     c2_out = prepared_backend.run(inp)[0]
 
+    if args.half:
+        c2_out = c2_out.astype(np.float32)
     output = torch.from_numpy(c2_out)
 
     utils.tensor_save_bgrimage(output[0], args.output_image, args.cuda)
@@ -226,6 +239,8 @@ def main():
                                  help="saved model to be used for stylizing the image. If file ends in .pth - PyTorch path is used, if in .onnx - Caffe2 path")
     eval_arg_parser.add_argument("--cuda", type=int, required=True,
                                  help="set it to 1 for running on GPU, 0 for CPU")
+    eval_arg_parser.add_argument("--half", action='store_true',
+                                 help="if set, use fp16 (on gpu)")
     eval_arg_parser.add_argument("--export_onnx", type=str,
                                  help="export ONNX model to a given file")
 
