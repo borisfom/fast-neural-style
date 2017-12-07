@@ -104,6 +104,7 @@ def train(args):
                                   (agg_content_loss + agg_style_loss) / (batch_id + 1)
                 )
                 print(mesg)
+                
             if (batch_id + 1) % args.save_interval == 0:
                 # save model
                 transformer.eval()
@@ -112,6 +113,8 @@ def train(args):
                     args.content_weight) + "_" + str(args.style_weight) + ".model"
                 save_model_path = os.path.join(args.save_model_dir, save_model_filename)
                 torch.save(transformer.state_dict(), save_model_path)
+                if args.cuda:
+                    transformer.cuda()
                 print("\nDone, trained model saved at", save_model_path)
                 
         print("\nDone, trained models saved at", save_model_path)
