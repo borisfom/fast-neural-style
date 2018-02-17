@@ -141,7 +141,18 @@ def stylize(args):
         content_image = content_image.cuda()
     content_image = Variable(utils.preprocess_batch(content_image), volatile=True)
     style_model = TransformerNet()
-    style_model.load_state_dict(torch.load(args.model))
+    state_dict = torch.load(args.model)
+
+    removed_modules = ['in2']
+
+    # remove unneeded
+    kl = list(state_dict.keys())
+    for k in kl:
+        for m in removed_modules:
+            if k.startswith(m):
+                state_dict.pop(k)
+      
+    style_model.load_state_dict(state_dict)
 
     if args.cuda:
         style_model.cuda()

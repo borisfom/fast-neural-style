@@ -11,7 +11,7 @@ class TransformerNet(torch.nn.Module):
         self.conv1 = ConvLayer(3, 32, kernel_size=9, stride=1)
         self.in1 = InstanceNormalization(32)
         self.conv2 = ConvLayer(32, 64, kernel_size=3, stride=2)
-        self.in2 = InstanceNormalization(64)
+#        self.in2 = InstanceNormalization(64)
         self.conv3 = ConvLayer(64, 128, kernel_size=3, stride=2)
         self.in3 = InstanceNormalization(128)
 
@@ -35,7 +35,8 @@ class TransformerNet(torch.nn.Module):
     def forward(self, X):
         in_X = X
         y = self.relu(self.in1(self.conv1(in_X)))
-        y = self.relu(self.in2(self.conv2(y)))
+ #       y = self.relu(self.in2(self.conv2(y)))
+        y = self.relu(self.conv2(y))
         y = self.relu(self.in3(self.conv3(y)))
         y = self.res1(y)
         y = self.res2(y)
@@ -51,13 +52,13 @@ class TransformerNet(torch.nn.Module):
 class ConvLayer(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride):
         super(ConvLayer, self).__init__()
-        reflection_padding = int(np.floor(kernel_size / 2))
-        self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
-        self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride)
+        reflection_padding = int(np.floor(kernel_size / 2.0))
+        # self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
+        self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=reflection_padding)
 
     def forward(self, x):
-        out = self.reflection_pad(x)
-        out = self.conv2d(out)
+        # out = self.reflection_pad(x)
+        out = self.conv2d(x)
         return out
 
 
@@ -74,7 +75,7 @@ class ResidualBlock(torch.nn.Module):
         self.conv2 = ConvLayer(channels, channels, kernel_size=3, stride=1)
         self.in2 = InstanceNormalization(channels)
         self.relu = nn.ReLU()
-
+        
     def forward(self, x):
         residual = x
         out = self.relu(self.in1(self.conv1(x)))
@@ -95,16 +96,16 @@ class UpsampleConvLayer(torch.nn.Module):
         self.upsample = upsample
         if upsample:
             self.upsample_layer = torch.nn.Upsample(scale_factor=upsample)
-        reflection_padding = int(np.floor(kernel_size / 2))
-        self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
-        self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride)
+        reflection_padding = int(np.floor(kernel_size / 2.0))
+        # self.reflection_pad = nn.ReflectionPad2d(reflection_padding)
+        self.conv2d = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=reflection_padding)
 
     def forward(self, x):
         x_in = x
         if self.upsample:
             x_in = self.upsample_layer(x_in)
-        out = self.reflection_pad(x_in)
-        out = self.conv2d(out)
+       # out = self.reflection_pad(x_in)
+        out = self.conv2d(x_in)
         return out
 
 
