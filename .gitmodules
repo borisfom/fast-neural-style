@@ -1,0 +1,3 @@
+[submodule "ext"]
+	path = ext
+	url = git@nvdl.githost.io:bfomitchev/cuPyTExt
