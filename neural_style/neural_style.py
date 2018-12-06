@@ -51,7 +51,7 @@ def train(args):
     style = utils.preprocess_batch(style)
     if args.cuda:
         style = style.cuda()
-    style_v = Variable(style, volatile=True)
+    style_v = Variable(style, requires_grad=False)
     style_v = utils.subtract_imagenet_mean_batch(style_v)
     features_style = vgg(style_v)
     gram_style = [utils.gram_matrix(y) for y in features_style]
@@ -71,7 +71,7 @@ def train(args):
 
             y = transformer(x)
 
-            xc = Variable(x.data.clone(), volatile=True)
+            xc = Variable(x.data.clone(), requires_grad=False)
 
             y = utils.subtract_imagenet_mean_batch(y)
             xc = utils.subtract_imagenet_mean_batch(xc)
@@ -139,18 +139,18 @@ def stylize(args):
 
     if args.cuda:
         content_image = content_image.cuda()
-    content_image = Variable(utils.preprocess_batch(content_image), volatile=True)
+    content_image = Variable(utils.preprocess_batch(content_image), requires_grad = False)
     style_model = TransformerNet()
     state_dict = torch.load(args.model)
 
-    removed_modules = ['in2']
+#    removed_modules = ['in2']
+    in_names = ["in1.scale", "in1.shift", "in2.scale", "in2.shift", "in3.scale", "in3.shift", "res1.in1.scale", "res1.in1.shift", "res1.in2.scale", "res1.in2.shift", "res2.in1.scale", "res2.in1.shift", "res2.in2.scale", "res2.in2.shift", "res3.in1.scale", "res3.in1.shift", "res3.in2.scale", "res3.in2.shift", "res4.in1.scale", "res4.in1.shift", "res4.in2.scale", "res4.in2.shift", "res5.in1.scale", "res5.in1.shift", "res5.in2.scale", "res5.in2.shift", "in4.scale", "in4.shift", "in5.scale", "in5.shift"]
 
-    # remove unneeded
-    kl = list(state_dict.keys())
-    for k in kl:
-        for m in removed_modules:
-            if k.startswith(m):
-                state_dict.pop(k)
+ #   kl = list(state_dict.keys())
+ #   for k in kl:
+ 
+    for k in in_names:
+          state_dict[k.replace("scale", "weight").replace("shift","bias")] = state_dict.pop(k)
       
     style_model.load_state_dict(state_dict)
 
@@ -202,7 +202,7 @@ def stylize_onnx_caffe2(args):
         c2_out = c2_out.astype(np.float32)
     output = torch.from_numpy(c2_out)
 
-    utils.tensor_save_bgrimage(output[0], args.output_image, args.cuda)
+    utils.tensor_save_rgbimage(output[0], args.output_image, args.cuda)
 
 
 def main():

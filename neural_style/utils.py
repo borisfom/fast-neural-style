@@ -27,7 +27,7 @@ def tensor_save_rgbimage(tensor, filename, cuda=False):
         img = tensor.clone().clamp(0, 255).numpy()
     img = img.transpose(1, 2, 0).astype('uint8')
     img = Image.fromarray(img)
-    img.save(filename, format='JPEG', subsampling=0, quality=100)
+    img.save(filename, format='PNG', subsampling=0, quality=100)
 
 
 def tensor_save_bgrimage(tensor, filename, cuda=False):
@@ -50,7 +50,7 @@ def subtract_imagenet_mean_batch(batch):
     mean[:, 0, :, :] = 103.939
     mean[:, 1, :, :] = 116.779
     mean[:, 2, :, :] = 123.680
-    batch = batch.sub(Variable(mean))
+    batch = batch.sub(Variable(mean, requires_grad = False))
     return batch
 
 
